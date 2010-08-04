@@ -25,7 +25,6 @@ This initial version is a little rough, you have to edit the plugin to make the 
 == Changelog ==
 
 = 1.1 =
-
 * Code cleanups and bug fixes by Matt.
 * Better formatting of new post emails.
 

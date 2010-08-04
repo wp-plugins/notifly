@@ -80,7 +80,6 @@ function pce_post_email( $new, $old, $post ) {
 	$notify_message .= sprintf( __( 'Title: "%s"' ), $post->post_title ) . "\r\n";
 	$notify_message .= sprintf( __('Author : %1$s'), $user->user_nicename ) . "\r\n\r\n";
 	$notify_message .= __('Post Preview: ') . "\r\n" . strip_tags( $post->post_content ) . "\r\n\r\n";
-//	$notify_message .= print_r( $post, true );
 	
 	$subject = sprintf( __('[%1$s] Post: "%2$s" by %3$s'), $blogname, $post->post_title, $user->user_nicename );
 
