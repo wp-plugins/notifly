@@ -12,6 +12,57 @@ TODO: admin option and UI for email addresses
 */
 
 /**
+ * pce_discussion_section()
+ *
+ * Output the email address notification section in the Discussion admin screen
+ *
+ * @todo Handle saving of email addresses
+ */
+function pce_discussion_section() {
+
+	$pce_email_addresses = get_option( 'pce_email_options' );
+	$pce_email_addresses = str_replace( ' ', "\n", $pce_email_addresses ); ?>
+
+	<table class="form-table">
+		<tbody>
+			<tr valign="top">
+				<th scope="row">
+					<?php _e( 'Email Addresses', 'notifly' ); ?>
+				</th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text"><?php _e( 'Email Addresses', 'notifly' ); ?></legend>
+						<p>
+							<label for="pce_email_addresses">
+								<?php _e( 'Email addresses of recipients to notify. One per line.', 'notifly' ); ?>
+							</label>
+						</p>
+						<p>
+							<textarea class="large-text" id="pce_email_addresses" cols="50" rows="10" name="pce_email_addresses">
+<?php echo wp_htmledit_pre( empty( $pce_email_addresses ) ? '' : implode( "\n", (array) $pce_email_addresses ) ); ?>
+							</textarea>
+						</p>
+					</fieldset>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+<?php
+}
+
+/**
+ * pce_admin_loader ()
+ *
+ * Sets up the settings section in the Discussion admin screen
+ *
+ * @uses add_settings_section
+ */
+function pce_admin_loader() {
+	add_settings_section( 'pce', __( 'Notifications' ), 'pce_discussion_section', 'discussion' );
+}
+add_action( 'admin_init', 'pce_admin_loader' );
+
+/**
  * pce_get_recipients()
  *
  * Gets the recipients
@@ -21,11 +72,11 @@ TODO: admin option and UI for email addresses
  * @return array
  */
 function pce_get_recipients() {
-	$users = maybe_unserialize( get_option( 'pce_recipients' ) );
+	$users = maybe_unserialize( get_option( 'pce_email_addresses' ) );
 
-	if ( !is_array( $users ) ) {
+	if ( !is_array( $users ) )
 		$users = explode( ', ', $users );
-	}
+
 	return apply_filters( 'pce_get_recipients', $users );
 }
 
