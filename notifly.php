@@ -34,7 +34,6 @@ add_action( 'admin_init', 'pce_discussion_settings_loader' );
  *
  * Output the email address notification section in the Discussion admin screen
  *
- * @todo Handle saving of email addresses
  */
 function pce_section_heading() {
 	_e( 'Enter the email addresses of recipients to notify when new posts and comments are published. One per line.', 'notifly' );
@@ -53,14 +52,13 @@ function pce_email_addresses_textarea() {
 }
 
 /**
- * pce_email_addresses_validate( $email_addresses )
+ * pce_validate_email_addresses( $email_addresses )
  *
  * Returns validated results
  *
  * @param string $email_addresses
  * @return string
  *
- * @todo Validate contents for proper email addresses
  */
 function pce_validate_email_addresses( $email_addresses ) {
 
@@ -85,8 +83,6 @@ function pce_validate_email_addresses( $email_addresses ) {
  * pce_get_recipients()
  *
  * Gets the recipients
- *
- * @todo Everything (ui, proper save/load)
  *
  * @return array
  */
