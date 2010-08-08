@@ -91,7 +91,7 @@ function pce_validate_email_addresses( $email_addresses ) {
  * @return array
  */
 function pce_get_recipients() {
-	$users = maybe_unserialize( get_option( 'pce_email_addresses' ) );
+	$users = get_option( 'pce_email_addresses' );
 
 	if ( !is_array( $users ) )
 		$users = explode( ', ', $users );
