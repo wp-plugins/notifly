@@ -150,7 +150,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 
 	// Send email to each user
 	foreach ( $recipients as $recipient )
-		wp_mail( $recipient->user_email, $email['subject'], $email['body'], $email['headers'] );
+		@wp_mail( $recipient->user_email, $email['subject'], $email['body'], $email['headers'] );
 }
 add_action( 'comment_post', 'pce_comment_email', 10, 2 );
 
@@ -207,7 +207,7 @@ function pce_post_email( $new, $old, $post ) {
 	
 	// Send email to each user
 	foreach ( $recipients as $recipient )
-		wp_mail( $recipient->user_email, $email['subject'], $email['message'], $email['headers'] );
+		@wp_mail( $recipient->user_email, $email['subject'], $email['message'], $email['headers'] );
 }
 add_action( 'transition_post_status', 'pce_post_email', 10, 3 );
 
