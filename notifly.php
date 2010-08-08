@@ -12,55 +12,74 @@ TODO: admin option and UI for email addresses
 */
 
 /**
- * pce_discussion_section()
- *
- * Output the email address notification section in the Discussion admin screen
- *
- * @todo Handle saving of email addresses
- */
-function pce_discussion_section() {
-
-	$pce_email_addresses = get_option( 'pce_email_options' );
-	$pce_email_addresses = str_replace( ' ', "\n", $pce_email_addresses ); ?>
-
-	<table class="form-table">
-		<tbody>
-			<tr valign="top">
-				<th scope="row">
-					<?php _e( 'Email Addresses', 'notifly' ); ?>
-				</th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text"><?php _e( 'Email Addresses', 'notifly' ); ?></legend>
-						<p>
-							<label for="pce_email_addresses">
-								<?php _e( 'Email addresses of recipients to notify. One per line.', 'notifly' ); ?>
-							</label>
-						</p>
-						<p>
-							<textarea class="large-text" id="pce_email_addresses" cols="50" rows="10" name="pce_email_addresses">
-<?php echo wp_htmledit_pre( empty( $pce_email_addresses ) ? '' : implode( "\n", (array) $pce_email_addresses ) ); ?>
-							</textarea>
-						</p>
-					</fieldset>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-<?php
-}
-
-/**
  * pce_admin_loader ()
  *
  * Sets up the settings section in the Discussion admin screen
  *
  * @uses add_settings_section
  */
-function pce_admin_loader() {
-	add_settings_section( 'pce', __( 'Notifications' ), 'pce_discussion_section', 'discussion' );
+function pce_discussion_settings_loader() {
+	// Add the section to Duscission options
+	add_settings_section( 'pce_options', __( 'Notifications', 'notifly' ), 'pce_section_heading', 'discussion' );
+
+	add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), 'pce_email_addresses_textarea', 'discussion', 'pce_options' );
+
+	// Register our setting with the discussions page
+	register_setting( 'discussion', 'pce_email_addresses', 'pce_validate_email_addresses' );
 }
-add_action( 'admin_init', 'pce_admin_loader' );
+add_action( 'admin_init', 'pce_discussion_settings_loader' );
+
+/**
+ * pce_section_heading()
+ *
+ * Output the email address notification section in the Discussion admin screen
+ *
+ * @todo Handle saving of email addresses
+ */
+function pce_section_heading() {
+	_e( 'Enter the email addresses of recipients to notify when new posts and comments are published. One per line.', 'notifly' );
+}
+
+/**
+ * pce_email_addresses_textarea()
+ *
+ * Output the textarea of email addresses
+ */
+function pce_email_addresses_textarea() {
+	$pce_email_addresses = get_option( 'pce_email_addresses' );
+	$pce_email_addresses = str_replace( ' ', "\n", $pce_email_addresses );
+
+	echo '<textarea class="large-text" id="pce_email_addresses" cols="50" rows="10" name="pce_email_addresses">' . $pce_email_addresses . '</textarea>';
+}
+
+/**
+ * pce_email_addresses_validate( $email_addresses )
+ *
+ * Returns validated results
+ *
+ * @param string $email_addresses
+ * @return string
+ *
+ * @todo Validate contents for proper email addresses
+ */
+function pce_validate_email_addresses( $email_addresses ) {
+
+	// Make array out of textarea lines
+	$recipients = str_replace( ' ', "\n", $email_addresses );
+	$recipients = explode( "\n", $recipients );
+
+	// Check validity of each address
+	foreach ( $recipients as $recipient ) {
+		if ( is_email( trim( $recipient ) ) )
+			$valid_addresses .= $recipient . "\n";
+	}
+
+	// Trim off extra whitespace
+	$valid_addresses = trim( $valid_addresses );
+
+	// Return valid addresses
+	return apply_filters( 'pce_validate_email_addresses', $valid_addresses );
+}
 
 /**
  * pce_get_recipients()
