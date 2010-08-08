@@ -91,12 +91,12 @@ function pce_validate_email_addresses( $email_addresses ) {
  * @return array
  */
 function pce_get_recipients() {
-	$users = get_option( 'pce_email_addresses' );
+	// Get recipients and turn into an array
+	$recipients = get_option( 'pce_email_addresses' );
+	$recipients = str_replace( ' ', "\n", $recipients );
+	$recipients = explode( "\n", $recipients );
 
-	if ( !is_array( $users ) )
-		$users = explode( ', ', $users );
-
-	return apply_filters( 'pce_get_recipients', $users );
+	return apply_filters( 'pce_get_recipients', $recipients );
 }
 
 /**
@@ -113,9 +113,6 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	// Only send emails for actual published comments
 	if ( '1' != $comment_status )
 		return;
-
-	// Get recipients
-	$recipients = pce_get_recipients();
 
 	// Get comment info
 	$comment                 = get_comment( $comment_id );
@@ -152,6 +149,9 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	foreach ( $headers as $header_part )
 		$email['headers'] .= $header_part . "\n";
 
+	// Get recipients
+	$recipients = pce_get_recipients();
+
 	// Send email to each user
 	foreach ( $recipients as $recipient )
 		wp_mail( $recipient->user_email, $email['subject'], $email['body'], $email['headers'] );
@@ -174,8 +174,7 @@ function pce_post_email( $new, $old, $post ) {
 	if ( 'publish' != $new || 'publish' == $old )
 		return;
 
-	// Get user related info
-	$recipients = pce_get_recipients();
+	// Get author
 	$author     = get_userdata( $post->post_author );
 
 	// Get comment info
@@ -207,6 +206,9 @@ function pce_post_email( $new, $old, $post ) {
 	foreach ( $headers as $header_part )
 		$email['headers'] .= $header_part . "\n";
 
+	// Get recipients
+	$recipients = pce_get_recipients();
+	
 	// Send email to each user
 	foreach ( $recipients as $recipient )
 		wp_mail( $recipient->user_email, $email['subject'], $email['message'], $email['headers'] );
