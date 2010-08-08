@@ -84,14 +84,28 @@ function pce_validate_email_addresses( $email_addresses ) {
  *
  * Gets the recipients
  *
+ * @param array $duplicates optional Users to remove from notifications
  * @return array
  */
-function pce_get_recipients() {
+function pce_get_recipients( $duplicates = '' ) {
 	// Get recipients and turn into an array
 	$recipients = get_option( 'pce_email_addresses' );
 	$recipients = str_replace( ' ', "\n", $recipients );
 	$recipients = explode( "\n", $recipients );
 
+	// Loop through recipients and remove duplicates if any were passed
+	if ( !empty( $duplicates ) ) {
+		foreach ( $duplicates as $duplicate ) {
+			foreach ( $recipients as $key => $recipient ) {
+				if ( $duplicate === $recipient ) {
+					unset( $recipients[$key] );
+				}
+			}
+			$recipients = array_values( $recipients );
+		}
+	}
+
+	// Return result
 	return apply_filters( 'pce_get_recipients', $recipients );
 }
 
@@ -113,6 +127,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	// Get comment info
 	$comment                 = get_comment( $comment_id );
 	$post                    = get_post( $comment->comment_post_ID );
+	$author                  = get_userdata( $post->post_author );
 	$comment_author_domain   = gethostbyaddr( $comment->comment_author_IP );
 	$blogname                = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 	$permalink               = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
@@ -146,7 +161,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 		$email['headers'] .= $header_part . "\n";
 
 	// Get recipients
-	$recipients = pce_get_recipients();
+	$recipients = pce_get_recipients( array( $author->user_email, $comment->comment_author_email ) );
 
 	// Send email to each user
 	foreach ( $recipients as $recipient )
@@ -203,7 +218,7 @@ function pce_post_email( $new, $old, $post ) {
 		$email['headers'] .= $header_part . "\n";
 
 	// Get recipients
-	$recipients = pce_get_recipients();
+	$recipients = pce_get_recipients( array( $author->user_email ) );
 	
 	// Send email to each user
 	foreach ( $recipients as $recipient )
