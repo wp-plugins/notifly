@@ -144,7 +144,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	$message['comment_email']     = sprintf( __( 'E-mail : %s', 'notifly' ), $comment->comment_author_email );
 	$message['comment_url']       = sprintf( __( 'URL    : %s', 'notifly' ), $comment->comment_author_url );
 	$message['comment_whois']     = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
-	$message['comment_content']   = sprintf( __( 'Comment: %s', 'notifly' ), "\r\n" . $comment->comment_content . "\r\n" );
+	$message['comment_content']   = sprintf( __( 'Comment: %s', 'notifly' ), "<br />" . $comment->comment_content . "<br />" );
 	$message['comment_permalink'] = sprintf( __( 'You can see all comments on this post here: %s', 'notifly' ), $permalink );
 
 	foreach ( $message as $message_part )
@@ -202,7 +202,7 @@ function pce_post_email( $new, $old, $post ) {
 	$message['permalink']    = get_permalink( $post->ID );
 	$message['post_title']   = sprintf( __( 'Title: "%s"', 'notifly'  ), $post->post_title );
 	$message['post_author']  = sprintf( __( 'Author : %s', 'notifly'  ), $author->user_nicename );
-	$message['post_preview'] = sprintf( __( 'Post Preview: %s', 'notifly' ), "\r\n" . strip_tags( $post->post_content ) );
+	$message['post_preview'] = sprintf( __( 'Post Preview: %s', 'notifly' ), "<br />" . strip_tags( $post->post_content ) );
 
 	foreach ( $message as $message_part )
 		$email['body'] .= $message_part . "<br /><br />";
