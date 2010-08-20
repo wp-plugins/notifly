@@ -148,7 +148,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	$message['comment_permalink'] = sprintf( __( 'You can see all comments on this post here: %s', 'notifly' ), $permalink );
 
 	foreach ( $message as $message_part )
-		$email['body'] .= $message_part . "\r\n";
+		$email['body'] .= $message_part . "<br /><br />";
 
 	// Email Headers
 	$headers['from'] = sprintf( 'From: %1$s <%2$s>', !empty( $comment->comment_author ) ? $comment->comment_author : $blogname, $wp_email );
@@ -165,7 +165,7 @@ function pce_comment_email( $comment_id, $comment_status ) {
 
 	// Send email to each user
 	foreach ( $recipients as $recipient )
-		@wp_mail( $recipient->user_email, $email['subject'], $email['body'], $email['headers'] );
+		@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
 }
 add_action( 'comment_post', 'pce_comment_email', 10, 2 );
 
@@ -205,7 +205,7 @@ function pce_post_email( $new, $old, $post ) {
 	$message['post_preview'] = sprintf( __( 'Post Preview: %s', 'notifly' ), "\r\n" . strip_tags( $post->post_content ) );
 
 	foreach ( $message as $message_part )
-		$email['body'] .= $message_part . "\r\n\r\n";
+		$email['body'] .= $message_part . "<br /><br />";
 
 	// Headers
 	$headers['from'] = sprintf( 'From: %1$s <%2$s>', $blogname, $wp_email );
@@ -222,7 +222,7 @@ function pce_post_email( $new, $old, $post ) {
 	
 	// Send email to each user
 	foreach ( $recipients as $recipient )
-		@wp_mail( $recipient->user_email, $email['subject'], $email['message'], $email['headers'] );
+		@wp_mail( $recipient, $email['subject'], $email['message'], $email['headers'] );
 }
 add_action( 'transition_post_status', 'pce_post_email', 10, 3 );
 
