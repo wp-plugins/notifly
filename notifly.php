@@ -6,9 +6,6 @@ Description: Sends a notification to all users of a site when a new post or comm
 Author: Otto42, Matt
 Version: 1.2
 Author URI: http://ottodestruct.com
-
-TODO: HTML emails (similar to wp.com)
-TODO: admin option and UI for email addresses
 */
 
 /**
