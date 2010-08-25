@@ -21,6 +21,9 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.2 =
+* Add activation notification
+
 = 1.2.1 =
 * Update readme.txt and plugin description
 * Add settings link to plugin row

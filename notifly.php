@@ -4,9 +4,31 @@ Plugin Name: Notifly - Post/Comment Emailer
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends a notification to all users of a site when a new post or comment is made. Add email addesses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.2.1
+Version: 1.2.2
 Author URI: http://ottodestruct.com
 */
+
+/**
+ * pce_activation_notice()
+ *
+ * Activation method
+ */
+function pce_activation_notice() {
+	global $wp_rewrite, $current_blog, $bp;
+
+	$email_addresses = get_option( 'pce_email_addresses' );
+
+	if ( empty( $email_addresses ) ) {
+?>
+
+		<div id="message" class="updated">
+			<p><?php printf( __( '<strong>Notifly is almost ready.</strong> Go <a href="%s">add some email addresses</a> to keep people in the loop.', 'notifly' ), admin_url( 'options-discussion.php' ) . '#pce_email_addresses' ) ?></p>
+		</div>
+
+<?php
+	}
+}
+add_action( 'admin_notices', 'pce_activation_notice' );
 
 /**
  * pce_add_settings_link( $links, $file )
@@ -17,13 +39,12 @@ Author URI: http://ottodestruct.com
  */
 function pce_add_settings_link( $links, $file ) {
 	if ( plugin_basename( __FILE__ ) == $file ) {
-		$settings_link = '<a href="options-discussion.php">' . __( 'Settings', 'notifly' ) . '</a>';
+		$settings_link = '<a href="' . admin_url( 'options-discussion.php' ) . '#pce_email_addresses">' . __( 'Settings', 'notifly' ) . '</a>';
 		array_unshift( $links, $settings_link );
 	}
 	return $links;
 }
 add_filter( 'plugin_action_links', 'pce_add_settings_link', 10, 2 );
-
 
 /**
  * pce_admin_loader ()
