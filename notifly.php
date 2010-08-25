@@ -4,7 +4,7 @@ Plugin Name: Notifly - Post/Comment Emailer
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends a notification to all users of a site when a new post or comment is made. Add email addesses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.2
+Version: 1.2.1
 Author URI: http://ottodestruct.com
 */
 

@@ -21,10 +21,13 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.1 =
+* Update readme.txt and plugin description
+* Add settings link to plugin row
+
 = 1.2 =
 * Add admin UI
 * Emails are now in HTML
-*
 
 = 1.1 =
 * Code cleanups and bug fixes by Matt.
