@@ -14,8 +14,6 @@ Author URI: http://ottodestruct.com
  * Activation method
  */
 function pce_activation_notice() {
-	global $wp_rewrite, $current_blog, $bp;
-
 	$email_addresses = get_option( 'pce_email_addresses' );
 
 	if ( empty( $email_addresses ) ) {
