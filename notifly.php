@@ -45,6 +45,20 @@ function pce_add_settings_link( $links, $file ) {
 add_filter( 'plugin_action_links', 'pce_add_settings_link', 10, 2 );
 
 /**
+ * pce_load_textdomain()
+ *
+ * Load the translation file for current language
+ */
+function pce_load_textdomain() {
+	$locale = apply_filters( 'pce_locale', get_locale() );
+	$mofile = WP_PLUGIN_DIR . '/notifly/languages/notifly-' . $locale . '.mo';
+
+	if ( file_exists( $mofile ) )
+		load_textdomain( 'notifly', $mofile );
+}
+add_action ( 'init', 'pce_load_textdomain' );
+
+/**
  * pce_admin_loader ()
  *
  * Sets up the settings section in the Discussion admin screen
