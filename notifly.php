@@ -2,7 +2,7 @@
 /*
 Plugin Name: Notifly
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
-Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addesses in your Discussion Settings area.
+Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addresses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
 Version: 1.2.3
 Author URI: http://ottodestruct.com
@@ -243,7 +243,7 @@ function pce_post_email( $new, $old, $post ) {
 	$wp_email = 'wordpress@' . preg_replace( '#^www\.#', '', strtolower( $_SERVER['SERVER_NAME'] ) );
 
 	// Email Subject
-	$email['subject'] = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $blogname, $author->post_title, $author->user_nicename );
+	$email['subject'] = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $blogname, $post->post_title, $author->user_nicename );
 
 	// Email body
 	$message['permalink']    = get_permalink( $post->ID );
@@ -266,10 +266,10 @@ function pce_post_email( $new, $old, $post ) {
 
 	// Get recipients
 	$recipients = pce_get_recipients( array( $author->user_email ) );
-	
+
 	// Send email to each user
 	foreach ( $recipients as $recipient )
-		@wp_mail( $recipient, $email['subject'], $email['message'], $email['headers'] );
+		@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
 }
 add_action( 'transition_post_status', 'pce_post_email', 10, 3 );
 
