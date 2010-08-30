@@ -405,6 +405,9 @@ class Notifly {
 					<td width="80">
 						<img border="0" src="http://s.wordpress.org/about/images/logo-grey/grey-m.png" alt="WordPress" width="64" height="64" />
 					</td>
+					<td>
+						' . sprintf( __( 'Don\'t just fly... <a href="%s">Notifly</a>', 'notifly' ), 'http://wordpress.org/extend/plugins/notifly/' ). '
+					</td>
 				</tr>
 			</table>
 		</body>';
