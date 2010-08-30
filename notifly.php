@@ -90,13 +90,13 @@ class Notifly {
 	 */
 	function discussion_settings_loader() {
 		// Add the section to Duscission options
-		add_settings_section( 'pce_options', __( 'Notifications', 'notifly' ), 'pce_section_heading', 'discussion' );
+		add_settings_section( 'pce_options', __( 'Notifications', 'notifly' ), array( $this, 'section_heading' ), 'discussion' );
 
 		// Add the field
-		add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), 'pce_email_addresses_textarea', 'discussion', 'pce_options' );
+		add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), array( $this, 'email_addresses_textarea' ), 'discussion', 'pce_options' );
 
 		// Register our setting with the discussions page
-		register_setting( 'discussion', 'pce_email_addresses', 'pce_validate_email_addresses' );
+		register_setting( 'discussion', array( $this, 'email_addresses' ), array( $this, 'validate_email_addresses' ) );
 	}
 
 	/**
