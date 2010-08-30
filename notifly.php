@@ -171,19 +171,15 @@ function pce_comment_email( $comment_id, $comment_status ) {
 	if ( '1' != $comment_status )
 		return;
 
-	// Get comment info
-	$comment                 = get_comment( $comment_id );
-	$post                    = get_post( $comment->comment_post_ID );
-	$author                  = get_userdata( $post->post_author );
-	$comment_author_domain   = gethostbyaddr( $comment->comment_author_IP );
-	$blogname                = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-	$permalink               = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
-
-	// Email from address
-	$wp_email = 'wordpress@' . preg_replace( '#^www\.#', '', strtolower( $_SERVER['SERVER_NAME'] ) );
+	$comment               = get_comment( $comment_id );
+	$post                  = get_post( $comment->comment_post_ID );
+	$post_author           = get_userdata( $post->post_author );
+	$comment_author_domain = gethostbyaddr( $comment->comment_author_IP );
+	$blogname              = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+	$wp_email              = 'wordpress@' . preg_replace( '#^www\.#', '', strtolower( $_SERVER['SERVER_NAME'] ) );
 
 	// Content details
-	$message['permalink']     = $permalink;
+	$message['permalink']     = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
 	$message['shortlink']     = wp_get_shortlink( $post->ID, 'post' ) . '#comment-' . $comment_id;
 	$message['timestamp']     = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
 	$message['title']         = $post->post_title;
@@ -204,8 +200,8 @@ function pce_comment_email( $comment_id, $comment_status ) {
 		$headers['reply-to'] = sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email );
 
 	// Email Subject
-	$email['recipients'] = pce_get_recipients( array( $author->user_email, $comment->comment_author_email ) );
 	$email['subject']    = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $blogname, $post->post_title );
+	$email['recipients'] = pce_get_recipients( array( $post_author->user_email, $comment->comment_author_email ) );
 	$email['body']       = pce_get_html_email_template( 'post', $message );
 	foreach ( $headers as $header_part )
 		$email['headers'] .= $header_part . "\n";
@@ -232,12 +228,8 @@ function pce_post_email( $new, $old, $post ) {
 	if ( 'publish' != $new || 'publish' == $old )
 		return;
 
-	// Get author
 	$author     = get_userdata( $post->post_author );
-
-	// Get comment info
 	$blogname   = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-	$permalink  = get_permalink( $post->ID );
 	$wp_email   = 'wordpress@' . preg_replace( '#^www\.#', '', strtolower( $_SERVER['SERVER_NAME'] ) );
 
 	// Content details
@@ -416,10 +408,11 @@ function pce_get_avatar( $email = '' ) {
 	if ( is_ssl() ) {
 		$host = 'https://secure.gravatar.com';
 	} else {
-		if ( !empty($email) )
+		if ( !empty($email) ) {
 			$host = sprintf( "http://%d.gravatar.com", ( hexdec( $email_hash{0} ) % 2 ) );
-		else
+		} else {
 			$host = 'http://0.gravatar.com';
+		}
 	}
 
 	// Get avatar/gravatar
