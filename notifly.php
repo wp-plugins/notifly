@@ -9,14 +9,16 @@ Author URI: http://ottodestruct.com
 */
 
 /**
- * The most fly way to get blog updates
+ * Notifly
+ * 
+ * The most fly way to send blog updates
  */
 class Notifly {
 
 	var $blogname;
 
 	/**
-	 * Initializer
+	 * Notifly Initializer
 	 */
 	function notifly() {
 		$this->blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -82,7 +84,7 @@ class Notifly {
 	}
 
 	/**
-	 * discussion_settings_loader ()
+	 * discussion_settings_loader()
 	 *
 	 * Sets up the settings section in the Discussion admin screen
 	 *
@@ -150,7 +152,7 @@ class Notifly {
 	}
 
 	/**
-	 * get_recipients()
+	 * get_recipients( $duplicates = '' )
 	 *
 	 * Gets the recipients
 	 *
@@ -301,7 +303,12 @@ class Notifly {
 	/**
 	 * get_html_email_template()
 	 *
-	 * Template used for Notifly emails
+	 * Template used for Notifly emails.
+	 * Hijacked from WordPress.com blog subscriptions.
+	 *
+	 * @param string $type post|comment
+	 * @param array $args Arguments to fill HTML email with
+	 * @return string
 	 */
 	function get_html_email_template( $type, $args ) {
 
