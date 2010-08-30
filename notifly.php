@@ -4,7 +4,7 @@ Plugin Name: Notifly
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addresses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.2.5
+Version: 1.2.6
 Author URI: http://ottodestruct.com
 */
 
