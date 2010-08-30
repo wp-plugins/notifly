@@ -92,7 +92,7 @@ class Notifly {
 	 */
 	function discussion_settings_loader() {
 		// Add the section to Duscission options
-		add_settings_section( 'pce_options', __( 'Notifications', 'notifly' ), array( $this, 'section_heading' ), 'discussion' );
+		add_settings_section( 'pce_options', __( 'Notifly', 'notifly' ), array( $this, 'section_heading' ), 'discussion' );
 
 		// Add the field
 		add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), array( $this, 'email_addresses_textarea' ), 'discussion', 'pce_options' );
@@ -108,7 +108,7 @@ class Notifly {
 	 *
 	 */
 	function section_heading() {
-		_e( 'Enter the email addresses of recipients to notify when new posts and comments are published. One per line.', 'notifly' );
+		_e( 'Email addresses of people to notifly when new posts and comments are published. One per line.', 'notifly' );
 	}
 
 	/**
