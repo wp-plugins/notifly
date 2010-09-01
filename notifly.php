@@ -21,7 +21,7 @@ class Notifly {
 	 * Notifly Initializer
 	 */
 	function notifly() {
-		$this->blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+		$this->blogname   = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 
 		// Let's get this party started quickly...
 		add_action( 'init',                   array( $this, 'load_textdomain' )            );
@@ -219,7 +219,7 @@ class Notifly {
 		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
 		$email['recipients']       = $this->get_recipients( array( $post_author->user_email, $comment->comment_author_email ) );
 		$email['body']             = $this->get_html_email_template( 'post', $message );
-		$email['headers']          = $this->get_email_headers( !empty( $comment->comment_author ) ? $comment->comment_author : $this->blogname, sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
+		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
 
 		// Send email to each user
 		foreach ( $email['recipients'] as $recipient )
@@ -261,7 +261,7 @@ class Notifly {
 		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
 		$email['body']            = $this->get_html_email_template( 'post', $message );
 		$email['recipients']      = $this->get_recipients( array( $author->user_email ) );
-		$email['headers']         = $this->get_email_headers( $blogname, $headers['reply-to'] = sprintf( 'Reply-To: %1$s <%2$s>', $user->user_email, $user->user_email ) );;
+		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $user->user_email, $user->user_email ) );;
 
 		// Send email to each user
 		foreach ( $email['recipients'] as $recipient )
@@ -288,8 +288,8 @@ class Notifly {
 	 * @param string $reply_to
 	 * @return string
 	 */
-	function get_email_headers( $blogname, $reply_to ) {
-		$headers['from']     = sprintf( 'From: %1$s <%2$s>', $blogname, $this->email_from() );
+	function get_email_headers( $reply_to ) {
+		$headers['from']     = sprintf( 'From: %1$s <%2$s>', $this->blogname, $this->email_from() );
 		$headers['mime']     = 'MIME-Version: 1.0';
 		$headers['type']     = 'Content-Type: text/html; charset="' . get_option( 'blog_charset' ) . '"';
 		$headers['reply_to'] = $reply_to;
@@ -406,13 +406,13 @@ class Notifly {
 						<img border="0" src="http://s.wordpress.org/about/images/logo-grey/grey-m.png" alt="WordPress" width="64" height="64" />
 					</td>
 					<td>
-						' . sprintf( __( 'Don\'t just fly... <a href="%s">Notifly</a>', 'notifly' ), 'http://wordpress.org/extend/plugins/notifly/' ). '
+						' . sprintf( __( 'Don\'t just fly... <a href="%s">Notifly</a>', 'notifly' ), 'http://wordpress.org/extend/plugins/notifly/' ) . '
 					</td>
 				</tr>
 			</table>
 		</body>';
 
-		// Comment Notification
+		// @todo Comment Notification
 		} elseif ( 'comment' == $type ) {
 
 		}
