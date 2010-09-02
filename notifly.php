@@ -98,7 +98,7 @@ class Notifly {
 		add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), array( $this, 'email_addresses_textarea' ), 'discussion', 'pce_options' );
 
 		// Register our setting with the discussions page
-		register_setting( 'discussion', array( $this, 'email_addresses' ), array( $this, 'validate_email_addresses' ) );
+		register_setting( 'discussion', 'pce_email_addresses', array( $this, 'validate_email_addresses' ) );
 	}
 
 	/**
