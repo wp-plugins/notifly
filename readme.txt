@@ -1,6 +1,6 @@
 === Notifly ===
 Contributors: Otto42, matt, johnjamesjacoby
-Tags: comments, notification, subscription
+Tags: post, comments, notification, subscription, subscribe
 Requires at least: 3.0
 Tested up to: 3.0.1
 
@@ -21,6 +21,19 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.6 =
+* Major code rewrite
+* Add footer notice to emails
+
+= 1.2.5 =
+* HTML email
+
+= 1.2.4 =
+* Fix blank email problem
+
+= 1.2.3 =
+* Translation support
+
 = 1.2.2 =
 * Add activation notification
 
@@ -37,4 +50,4 @@ This hooks into the new comment and new post actions to send an email to the add
 * Better formatting of new post emails.
 
 = 1.0 =
-* Intial release by Otto.
+* Initial release by Otto.
