@@ -38,6 +38,7 @@ class Notifly {
 
 		// Attaches email functions to WordPress actions
 		add_action( 'comment_post',           array( $this, 'comment_email' ),       10, 2 );
+		add_action( 'wp_set_comment_status',  array( $this, 'comment_email' ),       10, 2 );
 		add_action( 'transition_post_status', array( $this, 'post_email' ),          10, 3 );
 	}
 
