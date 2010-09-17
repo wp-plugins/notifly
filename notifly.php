@@ -199,7 +199,7 @@ class Notifly {
 	function comment_email( $comment_id, $comment_status ) {
 
 		// Only send emails for actual published comments
-		if ( '1' != $comment_status )
+		if ( '1' != $comment_status && 'approve' != $comment_status )
 			return;
 
 		$comment                   = get_comment( $comment_id );
