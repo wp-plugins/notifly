@@ -21,6 +21,9 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.7 =
+* Added two additional duplicate checks
+
 = 1.2.6 =
 * Major code rewrite
 * Add footer notice to emails

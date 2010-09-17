@@ -4,7 +4,7 @@ Plugin Name: Notifly
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addresses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.2.6
+Version: 1.2.7
 Author URI: http://ottodestruct.com
 */
 
@@ -15,13 +15,18 @@ Author URI: http://ottodestruct.com
  */
 class Notifly {
 
+	// Current blog name
 	var $blogname;
+
+	// Notifly recipients
+	var $recipients;
 
 	/**
 	 * Notifly Initializer
 	 */
 	function notifly() {
 		$this->blogname   = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+		$this->recipients = $this->get_recipients();
 
 		// Let's get this party started quickly...
 		add_action( 'init',                   array( $this, 'load_textdomain' )            );
@@ -222,7 +227,7 @@ class Notifly {
 		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
 
 		// Send email to each user
-		foreach ( $email['recipients'] as $recipient )
+		foreach ( (array)$email['recipients'] as $recipient )
 			@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
 	}
 
@@ -493,6 +498,182 @@ class Notifly {
 }
 
 // Set it off
-$Notifly = new Notifly();
+$notifly = new Notifly();
+
+/**
+ * Notify an author of a comment/trackback/pingback to one of their posts.
+ * Normally found in WordPress core, this pluggable function is slightly customized for Notifly.
+ * 
+ * @since 1.0.0
+ *
+ * @param int $comment_id Comment ID
+ * @param string $comment_type Optional. The comment type either 'comment' (default), 'trackback', or 'pingback'
+ * @return bool False if user email does not exist. True on completion.
+ */
+function wp_notify_postauthor( $comment_id, $comment_type = '' ) {
+	global $notifly;
+
+	$comment = get_comment($comment_id);
+	$post    = get_post($comment->comment_post_ID);
+	$user    = get_userdata( $post->post_author );
+
+	if ( $comment->user_id == $post->post_author ) return false; // The author moderated a comment on his own post
+
+	if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+
+	if ('' == $user->user_email) return false; // If there's no email to send the comment to
+
+	$comment_author_domain = @gethostbyaddr($comment->comment_author_IP);
+
+	// The blogname option is escaped with esc_html on the way into the database in sanitize_option
+	// we want to reverse this for the plain text arena of emails.
+	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+
+	if ( empty( $comment_type ) ) $comment_type = 'comment';
+
+	if ('comment' == $comment_type) {
+		$notify_message  = sprintf( __( 'New comment on your post "%s"' ), $post->post_title ) . "\r\n";
+		/* translators: 1: comment author, 2: author IP, 3: author domain */
+		$notify_message .= sprintf( __('Author : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+		$notify_message .= sprintf( __('E-mail : %s'), $comment->comment_author_email ) . "\r\n";
+		$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+		$notify_message .= sprintf( __('Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s'), $comment->comment_author_IP ) . "\r\n";
+		$notify_message .= __('Comment: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+		$notify_message .= __('You can see all comments on this post here: ') . "\r\n";
+		/* translators: 1: blog name, 2: post title */
+		$subject = sprintf( __('[%1$s] Comment: "%2$s"'), $blogname, $post->post_title );
+	} elseif ('trackback' == $comment_type) {
+		$notify_message  = sprintf( __( 'New trackback on your post "%s"' ), $post->post_title ) . "\r\n";
+		/* translators: 1: website name, 2: author IP, 3: author domain */
+		$notify_message .= sprintf( __('Website: %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+		$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+		$notify_message .= __('Excerpt: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+		$notify_message .= __('You can see all trackbacks on this post here: ') . "\r\n";
+		/* translators: 1: blog name, 2: post title */
+		$subject = sprintf( __('[%1$s] Trackback: "%2$s"'), $blogname, $post->post_title );
+	} elseif ('pingback' == $comment_type) {
+		$notify_message  = sprintf( __( 'New pingback on your post "%s"' ), $post->post_title ) . "\r\n";
+		/* translators: 1: comment author, 2: author IP, 3: author domain */
+		$notify_message .= sprintf( __('Website: %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+		$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+		$notify_message .= __('Excerpt: ') . "\r\n" . sprintf('[...] %s [...]', $comment->comment_content ) . "\r\n\r\n";
+		$notify_message .= __('You can see all pingbacks on this post here: ') . "\r\n";
+		/* translators: 1: blog name, 2: post title */
+		$subject = sprintf( __('[%1$s] Pingback: "%2$s"'), $blogname, $post->post_title );
+	}
+	$notify_message .= get_permalink($comment->comment_post_ID) . "#comments\r\n\r\n";
+	if ( EMPTY_TRASH_DAYS )
+		$notify_message .= sprintf( __('Trash it: %s'), admin_url("comment.php?action=trash&c=$comment_id") ) . "\r\n";
+	else
+		$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=delete&c=$comment_id") ) . "\r\n";
+	$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=spam&c=$comment_id") ) . "\r\n";
+
+	$wp_email = 'wordpress@' . preg_replace('#^www\.#', '', strtolower($_SERVER['SERVER_NAME']));
+
+	if ( '' == $comment->comment_author ) {
+		$from = "From: \"$blogname\" <$wp_email>";
+		if ( '' != $comment->comment_author_email )
+			$reply_to = "Reply-To: $comment->comment_author_email";
+	} else {
+		$from = "From: \"$comment->comment_author\" <$wp_email>";
+		if ( '' != $comment->comment_author_email )
+			$reply_to = "Reply-To: \"$comment->comment_author_email\" <$comment->comment_author_email>";
+	}
+
+	$message_headers = "$from\n"
+		. "Content-Type: text/plain; charset=\"" . get_option('blog_charset') . "\"\n";
+
+	if ( isset($reply_to) )
+		$message_headers .= $reply_to . "\n";
+
+	$notify_message  = apply_filters('comment_notification_text', $notify_message, $comment_id);
+	$subject         = apply_filters('comment_notification_subject', $subject, $comment_id);
+	$message_headers = apply_filters('comment_notification_headers', $message_headers, $comment_id);
+
+	@wp_mail($user->user_email, $subject, $notify_message, $message_headers);
+
+	return true;
+}
+
+/**
+ * Notifies the moderator of the blog about a new comment that is awaiting approval.
+ * Normally found in WordPress core, this pluggable function is slightly customized for Notifly.
+ * 
+ * @since 1.1.7
+ * @uses $wpdb
+ *
+ * @param int $comment_id Comment ID
+ * @return bool Always returns true
+ */
+function wp_notify_moderator($comment_id) {
+	global $wpdb, $notifly;
+
+	if( get_option( "moderation_notify" ) == 0 )
+		return true;
+
+	$admin_email = get_option('admin_email');
+
+	if ( in_array( $admin_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+
+	$comment = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_ID=%d LIMIT 1", $comment_id));
+	$post    = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID=%d LIMIT 1", $comment->comment_post_ID));
+
+	$comment_author_domain = @gethostbyaddr($comment->comment_author_IP);
+	$comments_waiting      = $wpdb->get_var("SELECT count(comment_ID) FROM $wpdb->comments WHERE comment_approved = '0'");
+
+	// The blogname option is escaped with esc_html on the way into the database in sanitize_option
+	// we want to reverse this for the plain text arena of emails.
+	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+
+	switch ($comment->comment_type)
+	{
+		case 'trackback':
+			$notify_message  = sprintf( __('A new trackback on the post "%s" is waiting for your approval'), $post->post_title ) . "\r\n";
+			$notify_message .= get_permalink($comment->comment_post_ID) . "\r\n\r\n";
+			$notify_message .= sprintf( __('Website : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+			$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+			$notify_message .= __('Trackback excerpt: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+			break;
+		case 'pingback':
+			$notify_message  = sprintf( __('A new pingback on the post "%s" is waiting for your approval'), $post->post_title ) . "\r\n";
+			$notify_message .= get_permalink($comment->comment_post_ID) . "\r\n\r\n";
+			$notify_message .= sprintf( __('Website : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+			$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+			$notify_message .= __('Pingback excerpt: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+			break;
+		default: //Comments
+			$notify_message  = sprintf( __('A new comment on the post "%s" is waiting for your approval'), $post->post_title ) . "\r\n";
+			$notify_message .= get_permalink($comment->comment_post_ID) . "\r\n\r\n";
+			$notify_message .= sprintf( __('Author : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+			$notify_message .= sprintf( __('E-mail : %s'), $comment->comment_author_email ) . "\r\n";
+			$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+			$notify_message .= sprintf( __('Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s'), $comment->comment_author_IP ) . "\r\n";
+			$notify_message .= __('Comment: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+			break;
+	}
+
+	$notify_message .= sprintf( __('Approve it: %s'),  admin_url("comment.php?action=approve&c=$comment_id") ) . "\r\n";
+	if ( EMPTY_TRASH_DAYS )
+		$notify_message .= sprintf( __('Trash it: %s'), admin_url("comment.php?action=trash&c=$comment_id") ) . "\r\n";
+	else
+		$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=delete&c=$comment_id") ) . "\r\n";
+	$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=spam&c=$comment_id") ) . "\r\n";
+
+	$notify_message .= sprintf( _n('Currently %s comment is waiting for approval. Please visit the moderation panel:',
+ 		'Currently %s comments are waiting for approval. Please visit the moderation panel:', $comments_waiting), number_format_i18n($comments_waiting) ) . "\r\n";
+	$notify_message .= admin_url("edit-comments.php?comment_status=moderated") . "\r\n";
+
+	$subject = sprintf( __('[%1$s] Please moderate: "%2$s"'), $blogname, $post->post_title );
+
+	$message_headers = '';
+
+	$notify_message  = apply_filters('comment_moderation_text', $notify_message, $comment_id);
+	$subject         = apply_filters('comment_moderation_subject', $subject, $comment_id);
+	$message_headers = apply_filters('comment_moderation_headers', $message_headers);
+
+	@wp_mail($admin_email, $subject, $notify_message, $message_headers);
+
+	return true;
+}
 
 ?>
