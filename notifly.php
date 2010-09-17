@@ -199,37 +199,37 @@ class Notifly {
 	function comment_email( $comment_id, $comment_status ) {
 
 		// Only send emails for actual published comments
-		if ( '1' != $comment_status || 'approve' != $comment_status )
-			return;
+		if ( '1' == $comment_status || 'approve' == $comment_status ) {
 
-		$comment                   = get_comment( $comment_id );
-		$post                      = get_post( $comment->comment_post_ID );
-		$post_author               = get_userdata( $post->post_author );
-		$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
+			$comment                   = get_comment( $comment_id );
+			$post                      = get_post( $comment->comment_post_ID );
+			$post_author               = get_userdata( $post->post_author );
+			$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
 
-		// Content details
-		$message['permalink']      = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
-		$message['shortlink']      = wp_get_shortlink( $post->ID, 'post' ) . '#comment-' . $comment_id;
-		$message['timestamp']      = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
-		$message['title']          = $post->post_title;
-		$message['author_name']    = $comment->comment_author;
-		$message['author_link']    = $comment->comment_author_url;
-		$message['author_avatar']  = $this->get_avatar( $comment->comment_author_email );
-		$message['content']        = strip_tags( $comment->comment_content );
+			// Content details
+			$message['permalink']      = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
+			$message['shortlink']      = wp_get_shortlink( $post->ID, 'post' ) . '#comment-' . $comment_id;
+			$message['timestamp']      = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
+			$message['title']          = $post->post_title;
+			$message['author_name']    = $comment->comment_author;
+			$message['author_link']    = $comment->comment_author_url;
+			$message['author_avatar']  = $this->get_avatar( $comment->comment_author_email );
+			$message['content']        = strip_tags( $comment->comment_content );
 
-		// Comment Extras
-		$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
-		$message['comment_whois']  = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
+			// Comment Extras
+			$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
+			$message['comment_whois']  = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
 
-		// Email Subject
-		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
-		$email['recipients']       = $this->get_recipients();
-		$email['body']             = $this->get_html_email_template( 'post', $message );
-		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
+			// Email Subject
+			$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
+			$email['recipients']       = $this->get_recipients();
+			$email['body']             = $this->get_html_email_template( 'post', $message );
+			$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
 
-		// Send email to each user
-		foreach ( (array)$email['recipients'] as $recipient )
-			@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
+			// Send email to each user
+			foreach ( (array)$email['recipients'] as $recipient )
+				@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
+		}
 	}
 
 	/**
