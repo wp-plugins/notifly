@@ -29,17 +29,18 @@ class Notifly {
 		$this->recipients = $this->get_recipients();
 
 		// Let's get this party started quickly...
-		add_action( 'init',                   array( $this, 'load_textdomain' )            );
+		add_action( 'init',                       array( $this, 'load_textdomain' )            );
 
 		// Admin area
-		add_action( 'admin_init',             array( $this, 'discussion_settings_loader' ) );
-		add_action( 'admin_notices',          array( $this, 'activation_notice' )          );
-		add_filter( 'plugin_action_links',    array( $this, 'add_settings_link' ),   10, 2 );
+		add_action( 'admin_init',                 array( $this, 'discussion_settings_loader' ) );
+		add_action( 'admin_notices',              array( $this, 'activation_notice' )          );
+		add_filter( 'plugin_action_links',        array( $this, 'add_settings_link' ),   10, 2 );
 
 		// Attaches email functions to WordPress actions
-		add_action( 'comment_post',           array( $this, 'comment_email' ),       10, 2 );
-		add_action( 'wp_set_comment_status',  array( $this, 'comment_email' ),       10, 2 );
-		add_action( 'transition_post_status', array( $this, 'post_email' ),          10, 3 );
+		add_action( 'comment_post',               array( $this, 'comment_email' ),       10, 2 );
+		//add_action( 'wp_set_comment_status',      array( $this, 'comment_email' ),       10, 2 );
+		add_action( 'transition_comment_status',  array( $this, 'transition_comment' ),  10, 3 );
+		add_action( 'transition_post_status',     array( $this, 'post_email' ),          10, 3 );
 	}
 
 	/**
@@ -189,6 +190,24 @@ class Notifly {
 	}
 
 	/**
+	 * post_email( $new, $old, $post )
+	 *
+	 * Send an email to all users when a new post is created
+	 *
+	 * @param string $new
+	 * @param string $old
+	 * @param object $post
+	 * @return Return empty if post is being updated or not published
+	 */
+	function transition_comment( $new, $old, $comment ) {
+		// Don't send emails on updates
+		if ( '1' != $new || '1' == $old )
+			return false;
+
+		$this->comment_email( $comment->ID, 'approve' );
+	}
+
+	/**
 	 * comment_email( $comment_id, $comment_status )
 	 *
 	 * Send an email to all users when a comment is made
@@ -200,40 +219,38 @@ class Notifly {
 	function comment_email( $comment_id, $comment_status ) {
 
 		// Only send emails for actual published comments
-		switch ( $comment_status ) {
-			case '1' :
-			case 'approve' :
-				$comment                   = get_comment( $comment_id );
-				$post                      = get_post( $comment->comment_post_ID );
-				$post_author               = get_userdata( $post->post_author );
-				$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
+		if ( empty( $comment_status ) || !in_array( $comment_status, array( '1', 'approve' ) ) )
+			return false;
 
-				// Content details
-				$message['permalink']      = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
-				$message['shortlink']      = wp_get_shortlink( $post->ID, 'post' ) . '#comment-' . $comment_id;
-				$message['timestamp']      = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
-				$message['title']          = $post->post_title;
-				$message['author_name']    = $comment->comment_author;
-				$message['author_link']    = $comment->comment_author_url;
-				$message['author_avatar']  = $this->get_avatar( $comment->comment_author_email );
-				$message['content']        = strip_tags( $comment->comment_content );
+		$comment                   = get_comment( $comment_id );
+		$post                      = get_post( $comment->comment_post_ID );
+		$post_author               = get_userdata( $post->post_author );
+		$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
 
-				// Comment Extras
-				$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
-				$message['comment_whois']  = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
+		// Content details
+		$message['permalink']      = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
+		$message['shortlink']      = wp_get_shortlink( $post->ID, 'post' ) . '#comment-' . $comment_id;
+		$message['timestamp']      = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
+		$message['title']          = $post->post_title;
+		$message['author_name']    = $comment->comment_author;
+		$message['author_link']    = $comment->comment_author_url;
+		$message['author_avatar']  = $this->get_avatar( $comment->comment_author_email );
+		$message['content']        = strip_tags( $comment->comment_content );
 
-				// Email Subject
-				$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
-				$email['recipients']       = $this->get_recipients();
-				$email['body']             = $this->get_html_email_template( 'post', $message );
-				$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
+		// Comment Extras
+		$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
+		$message['comment_whois']  = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
 
-				// Send email to each user
-				foreach ( (array)$email['recipients'] as $recipient )
-					@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
+		// Email Subject
+		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
+		$email['recipients']       = $this->get_recipients();
+		$email['body']             = $comment_status . '       ' . $this->get_html_email_template( 'post', $message );
+		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
-				break;
-		}
+		// Send email to each user
+		foreach ( (array)$email['recipients'] as $recipient )
+			@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
+
 	}
 
 	/**
@@ -535,7 +552,7 @@ function wp_notify_postauthor( $comment_id, $comment_type = '' ) {
 
 	if ( $comment->user_id == $post->post_author ) return false; // The author moderated a comment on his own post
 
-	if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+	//if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
 
 	if ('' == $user->user_email) return false; // If there's no email to send the comment to
 
