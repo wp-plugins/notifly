@@ -161,20 +161,20 @@ class Notifly {
 	 *
 	 * Gets the recipients
 	 *
-	 * @param array $duplicates optional Users to remove from notifications
+	 * @param array $skip_addresses optional Users to remove from notifications
 	 * @return array
 	 */
-	function get_recipients( $duplicates = '' ) {
+	function get_recipients( $skip_addresses = '' ) {
 		// Get recipients and turn into an array
 		$recipients = get_option( 'pce_email_addresses' );
 		$recipients = str_replace( ' ', "\n", $recipients );
 		$recipients = explode( "\n", $recipients );
 
 		// Loop through recipients and remove duplicates if any were passed
-		if ( !empty( $duplicates ) ) {
-			foreach ( $duplicates as $duplicate ) {
+		if ( !empty( $skip_addresses ) ) {
+			foreach ( $skip_addresses as $address ) {
 				foreach ( $recipients as $key => $recipient ) {
-					if ( $duplicate === $recipient ) {
+					if ( $address === $recipient ) {
 						unset( $recipients[$key] );
 					}
 				}
@@ -222,7 +222,7 @@ class Notifly {
 
 		// Email Subject
 		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
-		$email['recipients']       = $this->get_recipients( array( $post_author->user_email, $comment->comment_author_email ) );
+		$email['recipients']       = $this->get_recipients();
 		$email['body']             = $this->get_html_email_template( 'post', $message );
 		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $comment->comment_author_email, $comment->comment_author_email ) );
 
@@ -265,7 +265,7 @@ class Notifly {
 		// Create the email
 		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
 		$email['body']            = $this->get_html_email_template( 'post', $message );
-		$email['recipients']      = $this->get_recipients( array( $author->user_email ) );
+		$email['recipients']      = $this->get_recipients();
 		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $user->user_email, $user->user_email ) );;
 
 		// Send email to each user
