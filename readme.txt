@@ -21,6 +21,9 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.8 =
+* Fix function already exists checks
+
 = 1.2.7 =
 * Added two additional duplicate checks
 
