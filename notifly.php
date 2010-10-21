@@ -142,8 +142,9 @@ class Notifly {
 	function validate_email_addresses( $email_addresses ) {
 
 		// Make array out of textarea lines
-		$recipients = str_replace( ' ', "\n", $email_addresses );
-		$recipients = explode( "\n", $recipients );
+		$valid_addresses = '';
+		$recipients      = str_replace( ' ', "\n", $email_addresses );
+		$recipients      = explode( "\n", $recipients );
 
 		// Check validity of each address
 		foreach ( $recipients as $recipient ) {
@@ -332,10 +333,7 @@ class Notifly {
 		$headers['type']     = 'Content-Type: text/html; charset="' . get_option( 'blog_charset' ) . '"';
 		$headers['reply_to'] = $reply_to;
 
-		foreach ( $headers as $header_part )
-			$email_headers .= $header_part . "\n";
-
-		return $email_headers;
+		return implode( "\n", $headers );
 	}
 
 	/**
@@ -352,14 +350,16 @@ class Notifly {
 
 		// Build the post meta
 		$meta = '| ' . $args['timestamp'];
-		if ( $args['tags'] ) {
+		if ( isset( $args['tags'] ) && !empty( $args['tags'] ) ) {
 			//$meta .= ' | ' . __( 'Tags:', 'notifly' );
 			//<a href="" style="text-decoration: none; color: #0088cc;"></a>
 		}
-		if ( $args['categories'] ) {
+
+		if ( isset( $args['categories'] ) && !empty( $args['categories'] ) ) {
 			//$meta .= ' | ' . __( 'Categories:', 'notifly' );
 			//<a href="" style="text-decoration: none; color: #0088cc;"></a>
 		}
+
 		$meta .= ' | ' . __( 'Short Link:', 'notifly' ) . ' <a href="' . $args['shortlink'] . '" style="text-decoration: none; color: #0088cc;">' . $args['shortlink'] . '</a>';
 
 		// Build the email pieces
@@ -457,11 +457,7 @@ class Notifly {
 
 		$email['bottom'] = '</html>';
 
-		// Compile email content
-		foreach ( $email as $email_part )
-			$email_complete .= $email_part . "\n";
-
-		return $email_complete;
+		return implode( "\n", $email );
 	}
 
 	/**
@@ -476,6 +472,9 @@ class Notifly {
 
 		// Set avatar size
 		$size = '48';
+
+		// Safe alternate text
+		$safe_alt = '';
 
 		// Get site default avatar
 		$avatar_default = get_option( 'avatar_default' );
@@ -526,7 +525,7 @@ class Notifly {
 			$avatar = '<img alt="' . $safe_alt . '" src="' . $default . '" style="border: 1px solid #ddd; padding: 2px; background-color: white; width: 48px; margin-right: 7px;" class="avatar avatar-default avatar-' . $size . ' photo" height="' . $size . '" width="' . $size . '" />';
 		}
 
-		return apply_filters( 'notifly_get_avatar', $avatar, $id_or_email, $size, $default, $alt );
+		return apply_filters( 'notifly_get_avatar', $avatar, $email, $size, $default );
 	}
 }
 
