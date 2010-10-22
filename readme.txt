@@ -21,8 +21,13 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.2.9 =
+* Fix class already exists error
+* Fix additional email duplication
+* Add settings to unblock WordPress notification emails
+
 = 1.2.8 =
-* Fix function already exists checks
+* Fix function already exists error
 
 = 1.2.7 =
 * Added two additional duplicate checks
