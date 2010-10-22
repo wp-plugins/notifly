@@ -242,12 +242,12 @@ class Notifly {
 	 * @return Return empty if post is being updated or not published
 	 */
 	function transition_comment( $new, $old, $comment ) {
-		// Don't send emails on updates
-		//if ( '1' != $new || '1' == $old )
-		//	return false;
+		global $pce_comment_transition;
 
 		if ( 'approved' != $new || 'approved' == $old )
 			return false;
+
+		$pce_comment_transition = true;
 
 		$this->comment_email( isset( $comment->ID ) ? $comment->ID : $comment->comment_ID, 'approve' );
 	}
@@ -262,20 +262,27 @@ class Notifly {
 	 * @return Return empty if comment is not published
 	 */
 	function comment_email( $comment_id, $comment_status ) {
+		global $pce_comment_transition;
 
 		// Only send emails for actual published comments
 		if ( empty( $comment_status ) || !in_array( $comment_status, array( '1', 'approve' ) ) )
 			return false;
-
-		// Prevent Notifly email when approving a comment
-		if ( get_option( 'pce_email_moderator' ) && ( get_option( 'comments_notify' ) || get_option( 'comments_moderation' ) ) )
-			$admin_email = get_option( 'admin_email' );
 
 		// Comment data
 		$comment                   = get_comment( $comment_id );
 		$post                      = get_post( $comment->comment_post_ID );
 		$post_author               = get_userdata( $post->post_author );
 		$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
+
+		// Prevent Notifly email to site admins and/or comment author
+		if ( true === $pce_comment_transition ) {
+			if ( get_option( 'pce_email_moderator' ) && ( get_option( 'comments_notify' ) || get_option( 'comments_moderation' ) ) )
+				$blocked_recipients = array( get_option( 'admin_email' ), $comment->comment_author_email );
+			else
+				$blocked_recipients = $comment->comment_author_email;
+		} else {
+			$blocked_recipients = $comment->comment_author_email;
+		}
 
 		// Content details
 		$message['permalink']      = get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment_id;
@@ -293,7 +300,7 @@ class Notifly {
 
 		// Create the email
 		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
-		$email['recipients']       = $this->get_recipients( $admin_email );
+		$email['recipients']       = $this->get_recipients( $blocked_recipients );
 		$email['body']             = $this->get_html_email_template( 'post', $message );
 		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
@@ -337,7 +344,7 @@ class Notifly {
 
 		// Create the email
 		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
-		$email['recipients']      = $this->get_recipients();
+		$email['recipients']      = $this->get_recipients( $author->user_email );
 		$email['body']            = $this->get_html_email_template( 'post', $message );
 		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
