@@ -159,37 +159,6 @@ class Notifly {
 	}
 
 	/**
-	 * get_recipients( $duplicates = '' )
-	 *
-	 * Gets the recipients
-	 *
-	 * @param array $skip_addresses optional Users to remove from notifications
-	 * @return array
-	 */
-	function get_recipients( $skip_addresses = '' ) {
-		// Get recipients and turn into an array
-		$recipients = get_option( 'pce_email_addresses' );
-		$recipients = str_replace( ' ', "\n", $recipients );
-		$recipients = explode( "\n", $recipients );
-
-		// Loop through recipients and remove duplicates if any were passed
-		if ( !empty( $skip_addresses ) ) {
-			foreach ( $skip_addresses as $address ) {
-				foreach ( $recipients as $key => $recipient ) {
-					if ( $address === $recipient ) {
-						unset( $recipients[$key] );
-					}
-				}
-			}
-		}
-
-		$recipients = array_values( $recipients );
-
-		// Return result
-		return apply_filters( 'notifly_get_recipients', $recipients );
-	}
-
-	/**
 	 * post_email( $new, $old, $post )
 	 *
 	 * Send an email to all users when a new post is created
@@ -244,7 +213,7 @@ class Notifly {
 		// Email Subject
 		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
 		$email['recipients']       = $this->get_recipients();
-		$email['body']             = $comment_status . '       ' . $this->get_html_email_template( 'post', $message );
+		$email['body']             = $this->get_html_email_template( 'post', $message );
 		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
 		// Send email to each user
@@ -286,8 +255,8 @@ class Notifly {
 
 		// Create the email
 		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
-		$email['body']            = $this->get_html_email_template( 'post', $message );
 		$email['recipients']      = $this->get_recipients();
+		$email['body']            = $this->get_html_email_template( 'post', $message );
 		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $user->user_email, $user->user_email ) );;
 
 		// Send email to each user
@@ -333,6 +302,37 @@ class Notifly {
 		$headers['reply_to'] = $reply_to;
 
 		return implode( "\n", $headers );
+	}
+
+	/**
+	 * get_recipients( $skip_addresses = '' )
+	 *
+	 * Gets the recipients
+	 *
+	 * @param array $skip_addresses optional Users to remove from notifications
+	 * @return array
+	 */
+	function get_recipients( $skip_addresses = '' ) {
+		// Get recipients and turn into an array
+		$recipients = get_option( 'pce_email_addresses' );
+		$recipients = str_replace( ' ', "\n", $recipients );
+		$recipients = explode( "\n", $recipients );
+
+		// Loop through recipients and remove duplicates if any were passed
+		if ( !empty( $skip_addresses ) ) {
+			foreach ( $skip_addresses as $address ) {
+				foreach ( $recipients as $key => $recipient ) {
+					if ( $address === $recipient ) {
+						unset( $recipients[$key] );
+					}
+				}
+			}
+		}
+
+		$recipients = array_values( $recipients );
+
+		// Return result
+		return apply_filters( 'notifly_get_recipients', $recipients );
 	}
 
 	/**
@@ -546,15 +546,15 @@ if ( !function_exists( 'wp_notify_postauthor' ) ) :
 function wp_notify_postauthor( $comment_id, $comment_type = '' ) {
 	global $notifly;
 
-	$comment = get_comment($comment_id);
-	$post    = get_post($comment->comment_post_ID);
+	$comment = get_comment( $comment_id );
+	$post    = get_post( $comment->comment_post_ID );
 	$user    = get_userdata( $post->post_author );
 
 	if ( $comment->user_id == $post->post_author ) return false; // The author moderated a comment on his own post
 
-	//if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+	if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
 
-	if ('' == $user->user_email) return false; // If there's no email to send the comment to
+	if ( empty( $user->user_email ) ) return false; // If there's no email to send the comment to
 
 	$comment_author_domain = @gethostbyaddr($comment->comment_author_IP);
 
