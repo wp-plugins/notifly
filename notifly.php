@@ -42,6 +42,22 @@ class Notifly {
 		//add_action( 'wp_set_comment_status',      array( $this, 'comment_email' ),       10, 2 );
 		add_action( 'transition_comment_status',  array( $this, 'transition_comment' ),  10, 3 );
 		add_action( 'transition_post_status',     array( $this, 'post_email' ),          10, 3 );
+
+		// Register activation sequence
+		register_activation_hook( __FILE__, array( $this, 'activation' ) );
+	}
+
+	/**
+	 * activation()
+	 *
+	 * Block duplicate emails by default when activated if no previous settings exist
+	 */
+	function activation() {
+		if ( !get_option( 'pce_email_moderator' ) )
+			update_option( 'pce_email_moderator', '1' );
+
+		if ( !get_option( 'pce_email_post_author' ) )
+			update_option( 'pce_email_post_author', '1' );
 	}
 
 	/**
@@ -103,8 +119,16 @@ class Notifly {
 		// Add the field
 		add_settings_field( 'pce_email_addresses', __( 'Email Addresses', 'notifly' ), array( $this, 'email_addresses_textarea' ), 'discussion', 'pce_options' );
 
-		// Register our setting with the discussions page
+		// Add the field
+		add_settings_field( 'pce_email_moderator', __( 'Site Administrator', 'notifly' ), array( $this, 'email_moderator' ), 'discussion', 'pce_options' );
+
+		// Add the field
+		add_settings_field( 'pce_email_post_author', __( 'Post Author', 'notifly' ), array( $this, 'email_post_author' ), 'discussion', 'pce_options' );
+
+		// Register our settings with the discussions page
 		register_setting( 'discussion', 'pce_email_addresses', array( $this, 'validate_email_addresses' ) );
+		register_setting( 'discussion', 'pce_email_post_author', array( $this, 'validate_author' ) );
+		register_setting( 'discussion', 'pce_email_moderator', array( $this, 'validate_author' ) );
 	}
 
 	/**
@@ -127,6 +151,38 @@ class Notifly {
 		$pce_email_addresses = str_replace( ' ', "\n", $pce_email_addresses );
 
 		echo '<textarea class="large-text" id="pce_email_addresses" cols="50" rows="10" name="pce_email_addresses">' . $pce_email_addresses . '</textarea>';
+	}
+
+	/**
+	 * email_moderator()
+	 *
+	 * Output the checkbox of email addresses
+	 */
+	function email_moderator() {
+		$pce_email_moderator = get_option( 'pce_email_moderator' ); ?>
+
+		<label for="pce_email_moderator">
+			<input name="pce_email_moderator" type="checkbox" id="pce_email_moderator" <?php checked( $pce_email_moderator ); ?>>
+			<?php _e( 'Block WordPress Emails when the site administrator is included above and approves a comment.', 'notifly' ); ?>
+		</label>
+
+		<?php
+	}
+
+	/**
+	 * email_post_author()
+	 *
+	 * Output the checkbox of email addresses
+	 */
+	function email_post_author() {
+		$pce_post_author = get_option( 'pce_email_post_author' ); ?>
+
+		<label for="pce_email_post_author">
+			<input name="pce_email_post_author" type="checkbox" id="pce_email_post_author" <?php checked( $pce_post_author ); ?>>
+			<?php _e( 'Block WordPress Emails if the post author is included above.', 'notifly' ); ?>
+		</label>
+
+		<?php
 	}
 
 	/**
@@ -159,6 +215,23 @@ class Notifly {
 	}
 
 	/**
+	 * validate_author( $author )
+	 *
+	 * Returns true/false if author is checked
+	 *
+	 * @param string $author
+	 * @return boolean
+	 */
+	function validate_author( $author ) {
+		if ( 'on' == $author )
+			$retval = true;
+		else
+			$retval = false;
+
+		return $retval;
+	}
+
+	/**
 	 * post_email( $new, $old, $post )
 	 *
 	 * Send an email to all users when a new post is created
@@ -170,10 +243,13 @@ class Notifly {
 	 */
 	function transition_comment( $new, $old, $comment ) {
 		// Don't send emails on updates
-		if ( '1' != $new || '1' == $old )
+		//if ( '1' != $new || '1' == $old )
+		//	return false;
+
+		if ( 'approved' != $new || 'approved' == $old )
 			return false;
 
-		$this->comment_email( $comment->ID, 'approve' );
+		$this->comment_email( isset( $comment->ID ) ? $comment->ID : $comment->comment_ID, 'approve' );
 	}
 
 	/**
@@ -191,6 +267,11 @@ class Notifly {
 		if ( empty( $comment_status ) || !in_array( $comment_status, array( '1', 'approve' ) ) )
 			return false;
 
+		// Prevent Notifly email when approving a comment
+		if ( get_option( 'pce_email_moderator' ) && ( get_option( 'comments_notify' ) || get_option( 'comments_moderation' ) ) )
+			$admin_email = get_option( 'admin_email' );
+
+		// Comment data
 		$comment                   = get_comment( $comment_id );
 		$post                      = get_post( $comment->comment_post_ID );
 		$post_author               = get_userdata( $post->post_author );
@@ -210,9 +291,9 @@ class Notifly {
 		$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
 		$message['comment_whois']  = sprintf( __( 'Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s', 'notifly' ), $comment->comment_author_IP );
 
-		// Email Subject
+		// Create the email
 		$email['subject']          = sprintf( __( '[%1$s] Comment: "%2$s"', 'notifly' ), $this->blogname, $post->post_title );
-		$email['recipients']       = $this->get_recipients();
+		$email['recipients']       = $this->get_recipients( $admin_email );
 		$email['body']             = $this->get_html_email_template( 'post', $message );
 		$email['headers']          = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
@@ -249,15 +330,16 @@ class Notifly {
 		$message['tags']          = wp_get_post_tags( $post->ID );
 		$message['categories']    = wp_get_post_categories( $post->ID );
 
+		// Post author
 		$message['author_name']   = $author->user_nicename;
-		$message['author_link']   = get_author_link( false, $author->user_id );
+		$message['author_link']   = get_author_posts_url( $author->ID );
 		$message['author_avatar'] = $this->get_avatar( $author->user_email );
 
 		// Create the email
 		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
 		$email['recipients']      = $this->get_recipients();
 		$email['body']            = $this->get_html_email_template( 'post', $message );
-		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', $user->user_email, $user->user_email ) );;
+		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
 		// Send email to each user
 		foreach ( $email['recipients'] as $recipient )
@@ -320,9 +402,9 @@ class Notifly {
 
 		// Loop through recipients and remove duplicates if any were passed
 		if ( !empty( $skip_addresses ) ) {
-			foreach ( $skip_addresses as $address ) {
+			foreach ( (array)$skip_addresses as $address ) {
 				foreach ( $recipients as $key => $recipient ) {
-					if ( $address === $recipient ) {
+					if ( trim ( $address ) === trim( $recipient ) ) {
 						unset( $recipients[$key] );
 					}
 				}
@@ -488,7 +570,7 @@ class Notifly {
 		if ( is_ssl() ) {
 			$host = 'https://secure.gravatar.com';
 		} else {
-			if ( !empty($email) ) {
+			if ( !empty( $email ) ) {
 				$host = sprintf( "http://%d.gravatar.com", ( hexdec( $email_hash{0} ) % 2 ) );
 			} else {
 				$host = 'http://0.gravatar.com';
@@ -550,17 +632,24 @@ function wp_notify_postauthor( $comment_id, $comment_type = '' ) {
 	$post    = get_post( $comment->comment_post_ID );
 	$user    = get_userdata( $post->post_author );
 
-	if ( $comment->user_id == $post->post_author ) return false; // The author moderated a comment on his own post
+	// The author moderated a comment on his own post
+	if ( $comment->user_id == $post->post_author ) return false;
 
-	if ( in_array( $user->user_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+	// If there's no email to send the comment to
+	if ( empty( $user->user_email ) ) return false;
 
-	if ( empty( $user->user_email ) ) return false; // If there's no email to send the comment to
+	// Check if post author is alraedy on the Notifly list
+	if ( get_option( 'pce_email_post_author' ) ) {
+		foreach ( $notifly->recipients as $recipient ) {
+			if ( trim( $user->user_email ) == trim( $recipient ) ) return false;
+		}
+	}
 
-	$comment_author_domain = @gethostbyaddr($comment->comment_author_IP);
+	$comment_author_domain = @gethostbyaddr( $comment->comment_author_IP );
 
 	// The blogname option is escaped with esc_html on the way into the database in sanitize_option
-	// we want to reverse this for the plain text arena of emails.
-	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+	// we want to reverse this for the plain text area of emails.
+	$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 
 	if ( empty( $comment_type ) ) $comment_type = 'comment';
 
@@ -617,7 +706,7 @@ function wp_notify_postauthor( $comment_id, $comment_type = '' ) {
 	}
 
 	$message_headers = "$from\n"
-		. "Content-Type: text/plain; charset=\"" . get_option('blog_charset') . "\"\n";
+		. "Content-Type: text/plain; charset=\"" . get_option( 'blog_charset' ) . "\"\n";
 
 	if ( isset( $reply_to ) )
 		$message_headers .= $reply_to . "\n";
@@ -651,17 +740,15 @@ function wp_notify_moderator( $comment_id ) {
 
 	$admin_email = get_option( 'admin_email' );
 
-	if ( in_array( $admin_email, $notifly->recipients ) ) return false; // User is on the Notifly list
+	$comment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->comments WHERE comment_ID=%d LIMIT 1", $comment_id ) );
+	$post    = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->posts WHERE ID=%d LIMIT 1", $comment->comment_post_ID ) );
 
-	$comment = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_ID=%d LIMIT 1", $comment_id));
-	$post    = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID=%d LIMIT 1", $comment->comment_post_ID));
-
-	$comment_author_domain = @gethostbyaddr($comment->comment_author_IP);
-	$comments_waiting      = $wpdb->get_var("SELECT count(comment_ID) FROM $wpdb->comments WHERE comment_approved = '0'");
+	$comment_author_domain = @gethostbyaddr( $comment->comment_author_IP);
+	$comments_waiting      = $wpdb->get_var( "SELECT count(comment_ID) FROM $wpdb->comments WHERE comment_approved = '0'" );
 
 	// The blogname option is escaped with esc_html on the way into the database in sanitize_option
-	// we want to reverse this for the plain text arena of emails.
-	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+	// we want to reverse this for the plain text area of emails.
+	$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 
 	switch ( $comment->comment_type ) {
 		case 'trackback':
