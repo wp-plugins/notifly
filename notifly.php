@@ -321,12 +321,14 @@ class Notifly {
 	 * @return Return empty if post is being updated or not published
 	 */
 	function post_email( $new, $old, $post ) {
+		global $wp_post_types;
 
 		// Don't send emails on updates
 		if ( 'publish' != $new || 'publish' == $old )
 			return;
 
 		$author = get_userdata( $post->post_author );
+		$post_type_name = $wp_post_types[$post->post_type]->labels->singular_name;;
 
 		// Content details
 		$message['permalink']     = get_permalink( $post->ID );
@@ -343,11 +345,13 @@ class Notifly {
 		$message['author_avatar'] = $this->get_avatar( $author->user_email );
 
 		// Create the email
-		$email['subject']         = sprintf( __( '[%1$s] Post: "%2$s" by %3$s' ), $this->blogname, $post->post_title, $author->user_nicename );
+		$email['subject']         = sprintf( __( '[%1$s] %2$s: "%3$s" by %4$s' ), $this->blogname, $post_type_name, $post->post_title, $author->user_nicename );
 		$email['recipients']      = $this->get_recipients( $author->user_email );
 		$email['body']            = $this->get_html_email_template( 'post', $message );
 		$email['headers']         = $this->get_email_headers( sprintf( 'Reply-To: %1$s <%2$s>', __( 'No Reply', 'notifly' ), $this->no_reply_to() ) );
 
+		return;
+		
 		// Send email to each user
 		foreach ( $email['recipients'] as $recipient )
 			@wp_mail( $recipient, $email['subject'], $email['body'], $email['headers'] );
