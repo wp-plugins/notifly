@@ -22,7 +22,7 @@ This hooks into the new comment and new post actions to send an email to the add
 == Changelog ==
 
 = 1.3 =
-* Fix issue with iPhone email horizontal scrolling and tiny-weeny font sizes
+* Fix issue with iPhone email horizontal scrolling and itsy-bitsy font sizes
 
 = 1.2.9 =
 * Fix class already exists error
