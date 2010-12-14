@@ -4,7 +4,7 @@ Plugin Name: Notifly
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addresses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.2.9
+Version: 1.3
 Author URI: http://ottodestruct.com
 */
 
@@ -464,9 +464,11 @@ class Notifly {
 				text-decoration: none;
 				color: #0088cc;
 			}
+			/*
 			@media only screen and (max-device-width: 480px) {
 				 .post { min-width: 700px !important; }
 			}
+			*/
 			</style>
 			<title><?php // blog title ?></title>
 			<!--[if gte mso 12]>
@@ -474,6 +476,7 @@ class Notifly {
 			body {
 			font-family: arial;
 			font-size: 0.8em;
+			-webkit-text-size-adjust: none;
 			}
 			.post, .comment {
 			background-color: white !important;
@@ -489,7 +492,7 @@ class Notifly {
 
 			// Email Body
 			$email['body'] = '<body>
-			<div style="max-width: 1024px; min-width: 600px;" class="content">
+			<div style="max-width: 1024px;" class="content">
 				<div style="padding: 1em; margin: 1.5em 1em 0.5em 1em; background-color: #f5f5f5; border: 1px solid #ccc; -webkit-border-radius: 5px; -moz-border-radius: 5px; border-radius: 5px; line-height: 1.6em;" class="post">
 					<table style="width: 100%;" class="post-details">
 						<tr>
@@ -530,7 +533,7 @@ class Notifly {
 			</div>
 
 			<!-- WordPress Logo -->
-			<table style="max-width: 1024px; min-width: 600px; line-height: 1.6em;" class="footer">
+			<table style="max-width: 1024px; line-height: 1.6em;" class="footer">
 				<tr>
 					<td width="80">
 						<img border="0" src="http://s.wordpress.org/about/images/logo-grey/grey-m.png" alt="WordPress" width="64" height="64" />
