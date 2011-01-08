@@ -2,7 +2,7 @@
 Contributors: Otto42, matt, johnjamesjacoby
 Tags: post, comments, notification, subscription, subscribe
 Requires at least: 3.0
-Tested up to: 3.0.3
+Tested up to: 3.1
 
 Send notification emails of all new posts and new comments to everyone on a list. Great for private blogs.
 
@@ -20,6 +20,9 @@ This hooks into the new comment and new post actions to send an email to the add
 
 
 == Changelog ==
+
+= 1.3.1 =
+* Re-enable the sending of new post emails
 
 = 1.3 =
 * Fix issue with iPhone email horizontal scrolling and itsy-bitsy font sizes
