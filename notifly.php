@@ -464,8 +464,6 @@ class Notifly {
 	 * @return string
 	 */
 	function get_html_email_template( $type, $args ) {
-		global $allowedtags;
-
 		// Build the post meta
 		$meta = '| ' . $args['timestamp'];
 		if ( isset( $args['tags'] ) && !empty( $args['tags'] ) ) {
