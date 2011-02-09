@@ -243,7 +243,7 @@ class Notifly {
 	}
 
 	/**
-	 * post_email( $new, $old, $post )
+	 * transition_comment( $new, $old, $comment )
 	 *
 	 * Send an email to all users when a new post is created
 	 *
@@ -282,8 +282,15 @@ class Notifly {
 		// Comment data
 		$comment                   = get_comment( $comment_id );
 		$post                      = get_post( $comment->comment_post_ID );
+		$post_type_obj             = get_post_type_object( $post->post_type );
 		$post_author               = get_userdata( $post->post_author );
 		$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
+
+		$trigger = true;
+		if ( ! $post_type_obj->public )
+			$trigger = false;
+		if ( ! apply_filters( 'trigger_notifly_comment', $trigger, $comment, $post ) )
+			return;
 
 		// Prevent Notifly email to site admins and/or comment author
 		if ( true === $pce_comment_transition ) {
@@ -339,6 +346,12 @@ class Notifly {
 		$author = get_userdata( $post->post_author );
 		$post_type_obj = get_post_type_object( $post->post_type );
 		$post_type_name = $post_type_obj->labels->singular_name;
+
+		$trigger = true;
+		if ( ! $post_type_obj->public )
+			$trigger = false;
+		if ( ! apply_filters( 'trigger_notifly_post', $trigger, $post ) )
+			return;
 
 		// Content details
 		$message['permalink']     = get_permalink( $post->ID );
