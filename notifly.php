@@ -4,13 +4,15 @@ Plugin Name: Notifly
 Plugin URI: http://wordpress.org/extend/plugins/notifly/
 Description: Sends an email to the addresses of your choice when a new post or comment is made. Add email addresses in your Discussion Settings area.
 Author: Otto42, Matt, John James Jacoby
-Version: 1.3.1
+Version: 1.4
 Author URI: http://ottodestruct.com
 */
 
 if ( !class_exists( 'Notifly' ) ) :
 /**
  * Notifly
+ *
+ * @package Notifly
  *
  * The most fly way to send blog updates
  */
@@ -42,6 +44,15 @@ class Notifly {
 		//add_action( 'wp_set_comment_status',      array( $this, 'comment_email' ),       10, 2 );
 		add_action( 'transition_comment_status',  array( $this, 'transition_comment' ),  10, 3 );
 		add_action( 'transition_post_status',     array( $this, 'post_email' ),          10, 3 );
+
+		// Notifly text blocks
+		add_filter( 'notifly_text', array( $this, 'filter_html' ), 8 );
+		add_filter( 'notifly_text', 'make_clickable', 9 );
+		add_filter( 'notifly_text', 'wptexturize' );
+		add_filter( 'notifly_text', 'convert_chars' );
+		add_filter( 'notifly_text', 'force_balance_tags', 25 );
+		add_filter( 'notifly_text', 'convert_smilies', 20 );
+		add_filter( 'notifly_text', 'wpautop', 30 );
 
 		// Register activation sequence
 		register_activation_hook( __FILE__, array( $this, 'activation' ) );
@@ -232,7 +243,7 @@ class Notifly {
 	}
 
 	/**
-	 * post_email( $new, $old, $post )
+	 * transition_comment( $new, $old, $comment )
 	 *
 	 * Send an email to all users when a new post is created
 	 *
@@ -271,8 +282,15 @@ class Notifly {
 		// Comment data
 		$comment                   = get_comment( $comment_id );
 		$post                      = get_post( $comment->comment_post_ID );
+		$post_type_obj             = get_post_type_object( $post->post_type );
 		$post_author               = get_userdata( $post->post_author );
 		$comment_author_domain     = gethostbyaddr( $comment->comment_author_IP );
+
+		$trigger = true;
+		if ( ! $post_type_obj->public )
+			$trigger = false;
+		if ( ! apply_filters( 'trigger_notifly_comment', $trigger, $comment, $post ) )
+			return;
 
 		// Prevent Notifly email to site admins and/or comment author
 		if ( true === $pce_comment_transition ) {
@@ -292,7 +310,7 @@ class Notifly {
 		$message['author_name']    = $comment->comment_author;
 		$message['author_link']    = $comment->comment_author_url;
 		$message['author_avatar']  = $this->get_avatar( $comment->comment_author_email );
-		$message['content']        = strip_tags( $comment->comment_content );
+		$message['content']        = $comment->comment_content;
 
 		// Comment Extras
 		$message['comment_author'] = sprintf( __( 'Author : %1$s (IP: %2$s , %3$s)', 'notifly' ), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain );
@@ -329,12 +347,18 @@ class Notifly {
 		$post_type_obj = get_post_type_object( $post->post_type );
 		$post_type_name = $post_type_obj->labels->singular_name;
 
+		$trigger = true;
+		if ( ! $post_type_obj->public )
+			$trigger = false;
+		if ( ! apply_filters( 'trigger_notifly_post', $trigger, $post ) )
+			return;
+
 		// Content details
 		$message['permalink']     = get_permalink( $post->ID );
 		$message['shortlink']     = wp_get_shortlink( $post->ID, 'post' );
 		$message['timestamp']     = sprintf( __( '%1$s at %2$s', 'notifly' ), get_post_time( 'F j, Y', false, $post ), get_post_time( 'g:i a', false, $post ) );
 		$message['title']         = $post->post_title;
-		$message['content']       = strip_tags( $post->post_content );
+		$message['content']       = $post->post_content;
 		$message['tags']          = wp_get_post_tags( $post->ID );
 		$message['categories']    = wp_get_post_categories( $post->ID );
 
@@ -426,6 +450,23 @@ class Notifly {
 	}
 
 	/**
+	 * Runs HTML filtering over content to allow some HTML into emails.
+	 *
+	 * Uses the $allowedtags global, used for comments, and appends the
+	 * ul, li, and ol tags.
+	 *
+	 * @since 1.4
+	 *
+	 * @param string $content
+	 * @return string
+	 */
+	function filter_html( $content ) {
+		global $allowedtags;
+		$tags = array_merge( $allowedtags, array( 'ul' => array(), 'li' => array(), 'ol' => array() ) );
+		return wp_kses( $content, $tags );
+	}
+
+	/**
 	 * get_html_email_template()
 	 *
 	 * Template used for Notifly emails.
@@ -436,7 +477,6 @@ class Notifly {
 	 * @return string
 	 */
 	function get_html_email_template( $type, $args ) {
-
 		// Build the post meta
 		$meta = '| ' . $args['timestamp'];
 		if ( isset( $args['tags'] ) && !empty( $args['tags'] ) ) {
@@ -450,6 +490,8 @@ class Notifly {
 		}
 
 		$meta .= ' | ' . __( 'Short Link:', 'notifly' ) . ' <a href="' . $args['shortlink'] . '" style="text-decoration: none; color: #0088cc;">' . $args['shortlink'] . '</a>';
+
+		$args['content'] = apply_filters( 'notifly_text', $args['content'] );
 
 		// Build the email pieces
 		$email['doctype'] = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">';
@@ -519,7 +561,7 @@ class Notifly {
 					</table>
 
 					<!-- Post -->
-					<p>' . $args['content'] . '</p>
+					' . $args['content'] . '
 					<div style="clear: both"></div>
 
 					<!-- Reply -->

@@ -21,6 +21,10 @@ This hooks into the new comment and new post actions to send an email to the add
 
 == Changelog ==
 
+= 1.4 =
+* Properly display line breaks in comment and post content
+* Allow minimal HTML to be included in notification emails
+
 = 1.3.1 =
 * Re-enable the sending of new post emails
 
