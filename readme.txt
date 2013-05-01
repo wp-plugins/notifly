@@ -2,7 +2,7 @@
 Contributors: Otto42, matt, johnjamesjacoby
 Tags: post, comments, notification, subscription, subscribe
 Requires at least: 3.0
-Tested up to: 3.1
+Tested up to: 3.6
 
 Send notification emails of all new posts and new comments to everyone on a list. Great for private blogs.
 
